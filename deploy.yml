@@ -16,30 +16,46 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '14'
+        node-version: '18' # Atualizado para uma versão mais recente
 
     - name: Install dependencies
-      run: npm install
-
-    - name: Build
-      run: npm run build
+      run: |
+        npm ci 
+      # Usa npm ci em vez de npm install para instalação mais limpa
+        npm run build
 
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.3'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, libxml, mbstring, pdo
+        
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v2
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-
 
     - name: Install Composer dependencies
-      run: composer install --no-dev --optimize-autoloader
+      run: composer install --prefer-dist --no-progress --no-dev
+
+    - name: Generate application key
+      run: php artisan key:generate
 
     - name: Deploy to Render
       env:
-        API_KEY: ${{ secrets.RENDER_API_KEY }}
+        RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
       run: |
-        curl -X POST -H "Authorization: Bearer $API_KEY" \
-        -H "Content-Type: application/json" \
+        curl -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+        -H "accept: application/json" \
+        -H "authorization: Bearer $RENDER_API_KEY" \
+        -H "content-type: application/json" \
         -d '{
-          "serviceId": "<YOUR_RENDER_SERVICE_ID>",
-          "branch": "main"
-        }' \
-        https://api.render.com/v1/services/<YOUR_RENDER_SERVICE_ID>/deploys
+          "clearCache": "clear",
+          "pullRequestNumber": "",
+          "ref": "main"
+        }'
