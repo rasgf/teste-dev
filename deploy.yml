@@ -49,12 +49,12 @@ jobs:
         RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
       run: |
-        curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+        curl -X POST \
         -H "accept: application/json" \
         -H "authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
         -H "content-type: application/json" \
+        "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
         -d '{
-          "clearCache": "clear",
-          "pullRequestNumber": "",
+          "clearCache": true,
           "ref": "main"
         }'
